@@ -48,7 +48,14 @@ app.get('/oauth2callback', async (req, res) => {
         drive = google.drive({ version: 'v3', auth: oauth2Client });
         
         console.log('OAuth2 token alındı:', tokens.access_token);
-        res.json({ message: 'OAuth2 başarıyla yapılandırıldı' });
+        
+        // Token'ı environment variable olarak kaydet (geçici çözüm)
+        process.env.GOOGLE_ACCESS_TOKEN = tokens.access_token;
+        
+        res.json({ 
+            message: 'OAuth2 başarıyla yapılandırıldı',
+            access_token: tokens.access_token 
+        });
     } catch (error) {
         console.error('OAuth2 callback hatası:', error);
         res.status(500).json({ error: 'OAuth2 yapılandırma hatası' });
