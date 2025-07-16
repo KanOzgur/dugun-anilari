@@ -13,11 +13,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Google Drive API setup
+// Google Drive API setup - OAuth2 kullan
 let auth;
 try {
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        // Environment variable'dan JSON string olarak oku
+        // Service Account credentials'ı oku
         const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
         auth = new google.auth.GoogleAuth({
             credentials: credentials,
@@ -126,16 +126,19 @@ async function uploadToGoogleDrive(file, fileType) {
             throw new Error('GOOGLE_DRIVE_FOLDER_ID environment variable ayarlanmamış');
         }
 
+        // Dosya metadata'sı
         const fileMetadata = {
             name: `${fileType}_${Date.now()}_${file.originalname}`,
             parents: [folderId],
         };
 
+        // Media configuration
         const media = {
             mimeType: file.mimetype,
             body: require('stream').Readable.from(file.buffer)
         };
 
+        // Dosyayı yükle - Normal klasör için
         const response = await drive.files.create({
             requestBody: fileMetadata,
             media: media,
@@ -146,6 +149,12 @@ async function uploadToGoogleDrive(file, fileType) {
         return response.data.id;
     } catch (error) {
         console.error('Google Drive yükleme hatası:', error);
+        
+        // Eğer Service Account hatası varsa, klasör izinlerini kontrol et
+        if (error.message.includes('Service Accounts do not have storage quota')) {
+            throw new Error('Service Account kısıtlaması. Lütfen klasör izinlerini kontrol edin.');
+        }
+        
         throw new Error('Google Drive\'a yükleme başarısız: ' + error.message);
     }
 }
