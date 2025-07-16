@@ -98,7 +98,9 @@ app.get('/', (req, res) => {
 // Anıları getir
 app.get('/memories', (req, res) => {
     try {
-        res.json(memories);
+        // Sadece son 10 anıyı döndür
+        const recentMemories = memories.slice(0, 10);
+        res.json(recentMemories);
     } catch (error) {
         console.error('Anılar getirilirken hata:', error);
         res.status(500).json({ error: 'Anılar yüklenirken hata oluştu' });

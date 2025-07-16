@@ -122,7 +122,15 @@ function displayMemories(memories) {
         return;
     }
 
-    gallery.innerHTML = memories.map(memory => `
+    // Sadece fotoğraf türündeki anıları filtrele
+    const photoMemories = memories.filter(memory => memory.fileType === 'photo');
+
+    if (photoMemories.length === 0) {
+        gallery.innerHTML = '<div class="loading">Henüz fotoğraf paylaşılmamış. İlk fotoğrafı siz paylaşın!</div>';
+        return;
+    }
+
+    gallery.innerHTML = photoMemories.map(memory => `
         <div class="memory-card">
             <div class="memory-content">
                 <div class="memory-header">
@@ -130,10 +138,7 @@ function displayMemories(memories) {
                     <span class="memory-date">${formatDate(memory.createdAt)}</span>
                 </div>
                 ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
-                ${memory.fileType === 'photo' 
-                    ? `<iframe src="${memory.fileUrl}" width="100%" height="300" frameborder="0" style="border-radius: 8px;"></iframe>`
-                    : `<audio controls class="memory-media"><source src="${memory.fileUrl}" type="audio/mpeg">Tarayıcınız ses dosyasını desteklemiyor.</audio>`
-                }
+                <iframe src="${memory.fileUrl}" width="100%" height="300" frameborder="0" style="border-radius: 8px;"></iframe>
             </div>
         </div>
     `).join('');
