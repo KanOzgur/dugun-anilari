@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Düğün Anıları</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">💒 Düğün Anıları 💒</h1>
+            <p class="subtitle">Anılarınızı bizimle paylaşın</p>
+        </header>
+
+        <main class="main">
+            <div class="upload-section">
+                <div class="upload-card">
+                    <h2>Anınızı Paylaşın</h2>
+                    <form id="uploadForm" class="upload-form">
+                        <div class="form-group">
+                            <label for="name">Adınız Soyadınız</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="message">Mesajınız</label>
+                            <textarea id="message" name="message" rows="3" placeholder="Düğün hakkında düşüncelerinizi yazın..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fileType">Paylaşım Türü</label>
+                            <select id="fileType" name="fileType" required>
+                                <option value="">Seçiniz</option>
+                                <option value="photo">📸 Fotoğraf</option>
+                                <option value="audio">🎵 Ses Kaydı</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group file-input-group" id="fileInputGroup" style="display: none;">
+                            <label for="file">Dosya Seçin</label>
+                            <input type="file" id="file" name="file" accept="image/*,audio/*" required>
+                            <div class="file-preview" id="filePreview"></div>
+                        </div>
+
+                        <button type="submit" class="submit-btn">
+                            <span class="btn-text">Gönder</span>
+                            <span class="btn-loading" style="display: none;">Gönderiliyor...</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="gallery-section">
+                <h2>Paylaşılan Anılar</h2>
+                <div class="gallery" id="gallery">
+                    <div class="loading">Anılar yükleniyor...</div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>💕 Düğün anılarınız bizim için çok değerli 💕</p>
+        </footer>
+    </div>
+
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <h3>🎉 Teşekkürler!</h3>
+            <p>Anınız başarıyla paylaşıldı.</p>
+            <button class="modal-btn" onclick="closeModal()">Tamam</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
