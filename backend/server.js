@@ -182,16 +182,21 @@ async function uploadToGoogleDrive(file, fileType) {
         const fileId = response.data.id;
         console.log('Dosya Google Drive\'a yüklendi:', fileId);
 
-        // Dosyayı public yap
-        await drive.permissions.create({
-            fileId: fileId,
-            requestBody: {
-                role: 'reader',
-                type: 'anyone'
-            }
-        });
+        // Dosyayı public yap - daha güvenilir yöntem
+        try {
+            await drive.permissions.create({
+                fileId: fileId,
+                requestBody: {
+                    role: 'reader',
+                    type: 'anyone'
+                }
+            });
+            console.log('Dosya public yapıldı:', fileId);
+        } catch (permError) {
+            console.error('Permission hatası:', permError);
+            // Permission hatası olsa bile devam et
+        }
 
-        console.log('Dosya public yapıldı:', fileId);
         return fileId;
     } catch (error) {
         console.error('Google Drive yükleme hatası:', error);
@@ -201,8 +206,8 @@ async function uploadToGoogleDrive(file, fileType) {
 
 // Dosya URL'sini oluştur
 function getFileUrl(fileId) {
-    // Farklı URL formatlarını dene
-    return `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+    // Direkt embed URL'si
+    return `https://drive.google.com/file/d/${fileId}/preview`;
 }
 
 // Error handling middleware
