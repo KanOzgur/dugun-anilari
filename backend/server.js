@@ -201,7 +201,8 @@ async function uploadToGoogleDrive(file, fileType) {
 
 // Dosya URL'sini oluştur
 function getFileUrl(fileId) {
-    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    // Farklı URL formatlarını dene
+    return `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
 }
 
 // Error handling middleware
