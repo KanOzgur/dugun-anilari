@@ -280,6 +280,109 @@ body {
     transform: translateY(-2px);
 }
 
+.capture-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.capture-btn {
+    flex: 1;
+    padding: 15px 20px;
+    border: 2px solid #667eea;
+    border-radius: 15px;
+    background: white;
+    color: #667eea;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.capture-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.capture-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.photo-btn {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.photo-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
+.audio-btn {
+    border-color: #764ba2;
+    color: #764ba2;
+}
+
+.audio-btn:hover {
+    background: #764ba2;
+    color: white;
+}
+
+.capture-preview {
+    border: 2px dashed #667eea;
+    border-radius: 15px;
+    padding: 20px;
+    background: rgba(102, 126, 234, 0.05);
+    text-align: center;
+}
+
+.preview-content {
+    margin: 15px 0;
+    max-width: 100%;
+}
+
+.preview-content img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.preview-content audio {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.retake-btn {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.retake-btn:hover {
+    background: #ff5252;
+    transform: translateY(-2px);
+}
+
+/* Camera ve microphone ikonları için */
+.capture-btn::before {
+    font-size: 1.2rem;
+}
+
+/* Responsive tasarım */
 @media (max-width: 768px) {
     .main {
         grid-template-columns: 1fr;
@@ -304,6 +407,16 @@ body {
     
     .upload-card {
         padding: 20px;
+    }
+
+    .capture-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .capture-btn {
+        padding: 12px 15px;
+        font-size: 0.9rem;
     }
 }
 

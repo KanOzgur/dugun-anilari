@@ -3,43 +3,197 @@ const BACKEND_URL = 'https://dugun-anilari-backend.onrender.com';
 
 // DOM elementleri
 const uploadForm = document.getElementById('uploadForm');
-const fileTypeSelect = document.getElementById('fileType');
-const fileInputGroup = document.getElementById('fileInputGroup');
-const fileInput = document.getElementById('file');
-const filePreview = document.getElementById('filePreview');
+const photoCaptureBtn = document.getElementById('photoCaptureBtn');
+const audioCaptureBtn = document.getElementById('audioCaptureBtn');
+const capturePreview = document.getElementById('capturePreview');
+const previewContent = document.getElementById('previewContent');
+const retakeBtn = document.getElementById('retakeBtn');
+const submitBtn = document.getElementById('submitBtn');
 const gallery = document.getElementById('gallery');
 const successModal = document.getElementById('successModal');
 
-// Dosya türü seçimi değiştiğinde
-fileTypeSelect.addEventListener('change', function() {
-    if (this.value) {
-        fileInputGroup.style.display = 'block';
-        fileInput.accept = this.value === 'photo' ? 'image/*' : 'audio/*';
-    } else {
-        fileInputGroup.style.display = 'none';
-        filePreview.innerHTML = '';
+// Global değişkenler
+let capturedFile = null;
+let capturedFileType = null;
+let mediaStream = null;
+
+// Anlık fotoğraf çekme
+photoCaptureBtn.addEventListener('click', async function() {
+    try {
+        photoCaptureBtn.disabled = true;
+        photoCaptureBtn.textContent = '📸 Kamera Açılıyor...';
+        
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            } 
+        });
+        
+        mediaStream = stream;
+        
+        // Video element oluştur
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.style.width = '100%';
+        video.style.borderRadius = '10px';
+        
+        previewContent.innerHTML = '';
+        previewContent.appendChild(video);
+        
+        // Fotoğraf çek butonu ekle
+        const captureBtn = document.createElement('button');
+        captureBtn.textContent = '📸 Fotoğraf Çek';
+        captureBtn.className = 'capture-btn photo-btn';
+        captureBtn.style.marginTop = '10px';
+        
+        captureBtn.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            canvas.toBlob(blob => {
+                capturedFile = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+                capturedFileType = 'photo';
+                
+                // Video'yu kapat
+                stream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+                
+                // Önizleme göster
+                showPreview();
+            }, 'image/jpeg', 0.8);
+        });
+        
+        previewContent.appendChild(captureBtn);
+        capturePreview.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Kamera hatası:', error);
+        alert('Kameraya erişim izni gerekli!');
+        photoCaptureBtn.disabled = false;
+        photoCaptureBtn.textContent = '📸 Anlık Fotoğraf Çek';
     }
 });
 
-// Dosya seçildiğinde önizleme
-fileInput.addEventListener('change', function() {
-    const file = this.files[0];
-    if (!file) return;
+// Anlık ses kaydetme
+audioCaptureBtn.addEventListener('click', async function() {
+    try {
+        audioCaptureBtn.disabled = true;
+        audioCaptureBtn.textContent = '🎤 Mikrofon Açılıyor...';
+        
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 44100
+            } 
+        });
+        
+        mediaStream = stream;
+        
+        // Ses kayıt arayüzü
+        previewContent.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">🎤</div>
+                <p>Mikrofon hazır! Kayıt başlatmak için tıklayın.</p>
+                <button id="startRecordingBtn" class="capture-btn audio-btn" style="margin: 10px;">
+                    🎙️ Kayıt Başlat
+                </button>
+            </div>
+        `;
+        
+        capturePreview.style.display = 'block';
+        
+        let mediaRecorder = null;
+        let audioChunks = [];
+        
+        document.getElementById('startRecordingBtn').addEventListener('click', function() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                // Kaydı durdur
+                mediaRecorder.stop();
+                this.textContent = '🎙️ Kayıt Başlat';
+                this.style.background = '#764ba2';
+            } else {
+                // Kaydı başlat
+                audioChunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    capturedFile = new File([audioBlob], 'audio.wav', { type: 'audio/wav' });
+                    capturedFileType = 'audio';
+                    
+                    // Stream'i kapat
+                    stream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                    
+                    // Önizleme göster
+                    showPreview();
+                };
+                
+                mediaRecorder.start();
+                this.textContent = '⏹️ Kaydı Durdur';
+                this.style.background = '#ff6b6b';
+            }
+        });
+        
+    } catch (error) {
+        console.error('Mikrofon hatası:', error);
+        alert('Mikrofona erişim izni gerekli!');
+        audioCaptureBtn.disabled = false;
+        audioCaptureBtn.textContent = '🎤 Anlık Ses Kaydet';
+    }
+});
 
-    filePreview.innerHTML = '';
-
-    if (fileTypeSelect.value === 'photo') {
+// Önizleme göster
+function showPreview() {
+    if (capturedFileType === 'photo') {
         const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
+        img.src = URL.createObjectURL(capturedFile);
         img.style.maxWidth = '100%';
-        img.style.maxHeight = '200px';
+        img.style.maxHeight = '300px';
         img.style.objectFit = 'cover';
-        filePreview.appendChild(img);
-    } else if (fileTypeSelect.value === 'audio') {
+        img.style.borderRadius = '10px';
+        
+        previewContent.innerHTML = '';
+        previewContent.appendChild(img);
+    } else if (capturedFileType === 'audio') {
         const audio = document.createElement('audio');
         audio.controls = true;
-        audio.src = URL.createObjectURL(file);
-        filePreview.appendChild(audio);
+        audio.src = URL.createObjectURL(capturedFile);
+        audio.style.width = '100%';
+        audio.style.margin = '10px 0';
+        
+        previewContent.innerHTML = '';
+        previewContent.appendChild(audio);
+    }
+    
+    submitBtn.style.display = 'block';
+    photoCaptureBtn.disabled = false;
+    photoCaptureBtn.textContent = '📸 Anlık Fotoğraf Çek';
+    audioCaptureBtn.disabled = false;
+    audioCaptureBtn.textContent = '🎤 Anlık Ses Kaydet';
+}
+
+// Yeniden çek
+retakeBtn.addEventListener('click', function() {
+    capturedFile = null;
+    capturedFileType = null;
+    capturePreview.style.display = 'none';
+    submitBtn.style.display = 'none';
+    
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
     }
 });
 
@@ -47,18 +201,23 @@ fileInput.addEventListener('change', function() {
 uploadForm.addEventListener('submit', async function(e) {
     e.preventDefault();
 
+    if (!capturedFile) {
+        alert('Lütfen önce fotoğraf çekin veya ses kaydedin!');
+        return;
+    }
+
     const formData = new FormData();
     formData.append('name', document.getElementById('name').value);
     formData.append('message', document.getElementById('message').value);
-    formData.append('fileType', fileTypeSelect.value);
-    formData.append('file', fileInput.files[0]);
+    formData.append('fileType', capturedFileType);
+    formData.append('file', capturedFile);
 
-    const submitBtn = document.querySelector('.submit-btn');
-    const btnText = submitBtn.querySelector('.btn-text');
-    const btnLoading = submitBtn.querySelector('.btn-loading');
+    const submitBtnElement = document.querySelector('.submit-btn');
+    const btnText = submitBtnElement.querySelector('.btn-text');
+    const btnLoading = submitBtnElement.querySelector('.btn-loading');
 
     // Loading durumu
-    submitBtn.disabled = true;
+    submitBtnElement.disabled = true;
     btnText.style.display = 'none';
     btnLoading.style.display = 'inline';
 
@@ -71,8 +230,10 @@ uploadForm.addEventListener('submit', async function(e) {
         if (response.ok) {
             showSuccessModal();
             uploadForm.reset();
-            fileInputGroup.style.display = 'none';
-            filePreview.innerHTML = '';
+            capturePreview.style.display = 'none';
+            submitBtn.style.display = 'none';
+            capturedFile = null;
+            capturedFileType = null;
             loadMemories(); // Galeriyi yenile
         } else {
             const error = await response.text();
@@ -83,7 +244,7 @@ uploadForm.addEventListener('submit', async function(e) {
         alert('Bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
         // Loading durumunu kaldır
-        submitBtn.disabled = false;
+        submitBtnElement.disabled = false;
         btnText.style.display = 'inline';
         btnLoading.style.display = 'none';
     }

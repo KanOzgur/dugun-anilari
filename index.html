@@ -30,21 +30,24 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="fileType">Paylaşım Türü</label>
-                            <select id="fileType" name="fileType" required>
-                                <option value="">Seçiniz</option>
-                                <option value="photo">📸 Fotoğraf</option>
-                                <option value="audio">🎵 Ses Kaydı</option>
-                            </select>
+                            <label>Paylaşım Türü</label>
+                            <div class="capture-buttons">
+                                <button type="button" id="photoCaptureBtn" class="capture-btn photo-btn">
+                                    📸 Anlık Fotoğraf Çek
+                                </button>
+                                <button type="button" id="audioCaptureBtn" class="capture-btn audio-btn">
+                                    🎤 Anlık Ses Kaydet
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="form-group file-input-group" id="fileInputGroup" style="display: none;">
-                            <label for="file">Dosya Seçin</label>
-                            <input type="file" id="file" name="file" accept="image/*,audio/*" required>
-                            <div class="file-preview" id="filePreview"></div>
+                        <div class="form-group capture-preview" id="capturePreview" style="display: none;">
+                            <label>Önizleme</label>
+                            <div class="preview-content" id="previewContent"></div>
+                            <button type="button" id="retakeBtn" class="retake-btn">🔄 Yeniden Çek</button>
                         </div>
 
-                        <button type="submit" class="submit-btn">
+                        <button type="submit" class="submit-btn" id="submitBtn" style="display: none;">
                             <span class="btn-text">Gönder</span>
                             <span class="btn-loading" style="display: none;">Gönderiliyor...</span>
                         </button>
