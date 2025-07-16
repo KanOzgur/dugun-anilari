@@ -14,12 +14,28 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Google Drive API setup
-const auth = new google.auth.GoogleAuth({
-    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || './credentials.json',
-    scopes: ['https://www.googleapis.com/auth/drive.file'],
-});
+let auth;
+try {
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        // Environment variable'dan JSON string olarak oku
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+        auth = new google.auth.GoogleAuth({
+            credentials: credentials,
+            scopes: ['https://www.googleapis.com/auth/drive.file'],
+        });
+    } else {
+        // Dosyadan oku (development için)
+        auth = new google.auth.GoogleAuth({
+            keyFile: './credentials.json',
+            scopes: ['https://www.googleapis.com/auth/drive.file'],
+        });
+    }
+} catch (error) {
+    console.error('Google Drive API yapılandırma hatası:', error);
+    auth = null;
+}
 
-const drive = google.drive({ version: 'v3', auth });
+const drive = auth ? google.drive({ version: 'v3', auth }) : null;
 
 // In-memory storage for memories (production'da database kullanılmalı)
 let memories = [];
@@ -67,6 +83,10 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
         if (!name) {
             return res.status(400).json({ error: 'İsim gerekli' });
+        }
+
+        if (!drive) {
+            return res.status(500).json({ error: 'Google Drive API yapılandırılmamış' });
         }
 
         // Google Drive'a dosya yükle
@@ -144,6 +164,6 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`Server ${PORT} portunda çalışıyor`);
     console.log(`API: http://localhost:${PORT}`);
-    console.log(`Google Drive API: Aktif`);
+    console.log(`Google Drive API: ${drive ? 'Aktif' : 'Devre dışı'}`);
     console.log(`Folder ID: ${process.env.GOOGLE_DRIVE_FOLDER_ID || 'Ayarlanmamış'}`);
 }); 
