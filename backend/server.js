@@ -71,9 +71,6 @@ app.get('/auth', (req, res) => {
     res.json({ authUrl });
 });
 
-// In-memory storage for memories (production'da database kullanılmalı)
-let memories = [];
-
 // Multer configuration for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -96,14 +93,52 @@ app.get('/', (req, res) => {
 });
 
 // Anıları getir
-app.get('/memories', (req, res) => {
+app.get('/memories', async (req, res) => {
     try {
-        // Sadece son 10 anıyı döndür
-        const recentMemories = memories.slice(0, 10);
+        if (!drive) {
+            return res.status(500).json({ error: 'Google Drive API yapılandırılmamış' });
+        }
+
+        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+        if (!folderId) {
+            return res.status(500).json({ error: 'Google Drive folder ID ayarlanmamış' });
+        }
+
+        // Google Drive'dan dosyaları al
+        const response = await drive.files.list({
+            q: `'${folderId}' in parents and trashed=false`,
+            fields: 'files(id,name,createdTime,mimeType)',
+            orderBy: 'createdTime desc',
+            pageSize: 20 // Son 20 dosya
+        });
+
+        const files = response.data.files || [];
+        
+        // Dosyaları memory formatına çevir
+        const driveMemories = files.map(file => {
+            // Dosya adından bilgileri çıkar (format: photo_1234567890_filename.jpg)
+            const nameParts = file.name.split('_');
+            const fileType = nameParts[0]; // photo veya audio
+            const timestamp = nameParts[1];
+            const originalName = nameParts.slice(2).join('_');
+            
+            return {
+                id: file.id,
+                name: originalName || 'Bilinmeyen',
+                message: '', // Drive'da mesaj saklamıyoruz
+                fileType: fileType,
+                fileUrl: getFileUrl(file.id),
+                createdAt: file.createdTime
+            };
+        });
+
+        // Sadece son 10 dosyayı döndür
+        const recentMemories = driveMemories.slice(0, 10);
         res.json(recentMemories);
+
     } catch (error) {
         console.error('Anılar getirilirken hata:', error);
-        res.status(500).json({ error: 'Anılar yüklenirken hata oluştu' });
+        res.status(500).json({ error: 'Anılar yüklenirken hata oluştu: ' + error.message });
     }
 });
 
@@ -126,21 +161,18 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         }
 
         // Google Drive'a dosya yükle
-        const fileId = await uploadToGoogleDrive(file, fileType);
+        const fileId = await uploadToGoogleDrive(file, fileType, name);
         const fileUrl = getFileUrl(fileId);
 
-        // Memory objesi oluştur
+        // Memory objesi oluştur (sadece response için)
         const memory = {
-            id: uuidv4(),
+            id: fileId,
             name: name,
             message: message || '',
             fileType: fileType,
             fileUrl: fileUrl,
             createdAt: new Date().toISOString()
         };
-
-        // Memory'yi listeye ekle
-        memories.unshift(memory);
 
         res.json({ 
             message: 'Anı başarıyla paylaşıldı',
@@ -154,7 +186,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 // Google Drive'a dosya yükleme fonksiyonu
-async function uploadToGoogleDrive(file, fileType) {
+async function uploadToGoogleDrive(file, fileType, originalName) {
     try {
         const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
         
@@ -164,7 +196,7 @@ async function uploadToGoogleDrive(file, fileType) {
 
         // Dosya metadata'sı
         const fileMetadata = {
-            name: `${fileType}_${Date.now()}_${file.originalname}`,
+            name: `${fileType}_${Date.now()}_${originalName}`,
             parents: [folderId],
         };
 
@@ -208,8 +240,9 @@ async function uploadToGoogleDrive(file, fileType) {
 
 // Dosya URL'sini oluştur
 function getFileUrl(fileId) {
-    // Direkt embed URL'si
-    return `https://drive.google.com/file/d/${fileId}/preview`;
+    // Cache-busting için timestamp ekle
+    const timestamp = Date.now();
+    return `https://drive.google.com/file/d/${fileId}/preview?t=${timestamp}`;
 }
 
 // Error handling middleware
