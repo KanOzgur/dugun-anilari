@@ -348,7 +348,7 @@ function displayMemories(memories) {
                     <span class="memory-date">${formatDate(memory.createdAt)}</span>
                 </div>
                 ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
-                <iframe src="${memory.fileUrl}" width="100%" height="300" frameborder="0" style="border-radius: 8px;"></iframe>
+                <iframe src="${memory.fileUrl}" width="100%" height="300" frameborder="0" style="border-radius: 8px;" loading="lazy"></iframe>
             </div>
         </div>
     `).join('');
