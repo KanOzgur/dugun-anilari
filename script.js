@@ -1,5 +1,5 @@
 // Backend URL - Render'da deploy edildikten sonra güncellenecek
-const BACKEND_URL = 'https://your-backend-url.onrender.com';
+const BACKEND_URL = 'https://dugun-anilari-backend.onrender.com';
 
 // DOM elementleri
 const uploadForm = document.getElementById('uploadForm');
