@@ -14,28 +14,55 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Google Drive API setup - OAuth2 kullan
-let auth;
+let oauth2Client;
+let drive = null;
+
 try {
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        // Service Account credentials'ı oku
-        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
-        auth = new google.auth.GoogleAuth({
-            credentials: credentials,
-            scopes: ['https://www.googleapis.com/auth/drive.file'],
+    // OAuth2 credentials
+    oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+    );
+
+    // Access token varsa kullan
+    if (process.env.GOOGLE_ACCESS_TOKEN) {
+        oauth2Client.setCredentials({
+            access_token: process.env.GOOGLE_ACCESS_TOKEN
         });
+        drive = google.drive({ version: 'v3', auth: oauth2Client });
+        console.log('OAuth2 ile Google Drive API başarıyla yapılandırıldı');
     } else {
-        // Dosyadan oku (development için)
-        auth = new google.auth.GoogleAuth({
-            keyFile: './credentials.json',
-            scopes: ['https://www.googleapis.com/auth/drive.file'],
-        });
+        console.log('OAuth2 access token bulunamadı');
     }
 } catch (error) {
     console.error('Google Drive API yapılandırma hatası:', error);
-    auth = null;
 }
 
-const drive = auth ? google.drive({ version: 'v3', auth }) : null;
+// OAuth2 callback endpoint
+app.get('/oauth2callback', async (req, res) => {
+    try {
+        const { code } = req.query;
+        const { tokens } = await oauth2Client.getToken(code);
+        oauth2Client.setCredentials(tokens);
+        drive = google.drive({ version: 'v3', auth: oauth2Client });
+        
+        console.log('OAuth2 token alındı:', tokens.access_token);
+        res.json({ message: 'OAuth2 başarıyla yapılandırıldı' });
+    } catch (error) {
+        console.error('OAuth2 callback hatası:', error);
+        res.status(500).json({ error: 'OAuth2 yapılandırma hatası' });
+    }
+});
+
+// OAuth2 authorization URL
+app.get('/auth', (req, res) => {
+    const authUrl = oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/drive.file']
+    });
+    res.json({ authUrl });
+});
 
 // In-memory storage for memories (production'da database kullanılmalı)
 let memories = [];
@@ -86,7 +113,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         }
 
         if (!drive) {
-            return res.status(500).json({ error: 'Google Drive API yapılandırılmamış' });
+            return res.status(500).json({ error: 'Google Drive API yapılandırılmamış. OAuth2 gerekli.' });
         }
 
         // Google Drive'a dosya yükle
@@ -138,7 +165,7 @@ async function uploadToGoogleDrive(file, fileType) {
             body: require('stream').Readable.from(file.buffer)
         };
 
-        // Dosyayı yükle - Normal klasör için
+        // Dosyayı yükle
         const response = await drive.files.create({
             requestBody: fileMetadata,
             media: media,
@@ -149,12 +176,6 @@ async function uploadToGoogleDrive(file, fileType) {
         return response.data.id;
     } catch (error) {
         console.error('Google Drive yükleme hatası:', error);
-        
-        // Eğer Service Account hatası varsa, klasör izinlerini kontrol et
-        if (error.message.includes('Service Accounts do not have storage quota')) {
-            throw new Error('Service Account kısıtlaması. Lütfen klasör izinlerini kontrol edin.');
-        }
-        
         throw new Error('Google Drive\'a yükleme başarısız: ' + error.message);
     }
 }
@@ -173,6 +194,6 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`Server ${PORT} portunda çalışıyor`);
     console.log(`API: http://localhost:${PORT}`);
-    console.log(`Google Drive API: ${drive ? 'Aktif' : 'Devre dışı'}`);
+    console.log(`Google Drive API: ${drive ? 'OAuth2 Aktif' : 'Devre dışı'}`);
     console.log(`Folder ID: ${process.env.GOOGLE_DRIVE_FOLDER_ID || 'Ayarlanmamış'}`);
 }); 
