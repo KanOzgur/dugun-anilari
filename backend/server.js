@@ -71,6 +71,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
         // Google Drive'a dosya yükle
         const fileId = await uploadToGoogleDrive(file, fileType);
+        const fileUrl = `https://drive.google.com/uc?id=${fileId}`;
 
         // Memory objesi oluştur
         const memory = {
@@ -78,7 +79,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
             name: name,
             message: message || '',
             fileType: fileType,
-            fileUrl: `https://drive.google.com/uc?id=${fileId}`,
+            fileUrl: fileUrl,
             createdAt: new Date().toISOString()
         };
 
@@ -92,7 +93,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
     } catch (error) {
         console.error('Dosya yüklenirken hata:', error);
-        res.status(500).json({ error: 'Dosya yüklenirken hata oluştu' });
+        res.status(500).json({ error: 'Dosya yüklenirken hata oluştu: ' + error.message });
     }
 });
 
@@ -101,9 +102,13 @@ async function uploadToGoogleDrive(file, fileType) {
     try {
         const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
         
+        if (!folderId) {
+            throw new Error('GOOGLE_DRIVE_FOLDER_ID environment variable ayarlanmamış');
+        }
+
         const fileMetadata = {
             name: `${fileType}_${Date.now()}_${file.originalname}`,
-            parents: folderId ? [folderId] : undefined,
+            parents: [folderId],
         };
 
         const media = {
@@ -117,17 +122,18 @@ async function uploadToGoogleDrive(file, fileType) {
             fields: 'id'
         });
 
+        console.log('Dosya Google Drive\'a yüklendi:', response.data.id);
         return response.data.id;
     } catch (error) {
         console.error('Google Drive yükleme hatası:', error);
-        throw new Error('Google Drive\'a yükleme başarısız');
+        throw new Error('Google Drive\'a yükleme başarısız: ' + error.message);
     }
 }
 
 // Error handling middleware
 app.use((error, req, res, next) => {
     console.error('Server hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
 });
 
 // 404 handler
@@ -138,4 +144,6 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`Server ${PORT} portunda çalışıyor`);
     console.log(`API: http://localhost:${PORT}`);
+    console.log(`Google Drive API: Aktif`);
+    console.log(`Folder ID: ${process.env.GOOGLE_DRIVE_FOLDER_ID || 'Ayarlanmamış'}`);
 }); 
