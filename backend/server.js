@@ -118,7 +118,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
         // Google Drive'a dosya yükle
         const fileId = await uploadToGoogleDrive(file, fileType);
-        const fileUrl = `https://drive.google.com/uc?id=${fileId}`;
+        const fileUrl = getFileUrl(fileId);
 
         // Memory objesi oluştur
         const memory = {
@@ -172,12 +172,29 @@ async function uploadToGoogleDrive(file, fileType) {
             fields: 'id'
         });
 
-        console.log('Dosya Google Drive\'a yüklendi:', response.data.id);
-        return response.data.id;
+        const fileId = response.data.id;
+        console.log('Dosya Google Drive\'a yüklendi:', fileId);
+
+        // Dosyayı public yap
+        await drive.permissions.create({
+            fileId: fileId,
+            requestBody: {
+                role: 'reader',
+                type: 'anyone'
+            }
+        });
+
+        console.log('Dosya public yapıldı:', fileId);
+        return fileId;
     } catch (error) {
         console.error('Google Drive yükleme hatası:', error);
         throw new Error('Google Drive\'a yükleme başarısız: ' + error.message);
     }
+}
+
+// Dosya URL'sini oluştur
+function getFileUrl(fileId) {
+    return `https://drive.google.com/uc?export=view&id=${fileId}`;
 }
 
 // Error handling middleware

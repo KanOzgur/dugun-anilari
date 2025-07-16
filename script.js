@@ -131,7 +131,8 @@ function displayMemories(memories) {
                 </div>
                 ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
                 ${memory.fileType === 'photo' 
-                    ? `<img src="${memory.fileUrl}" alt="Anı fotoğrafı" class="memory-media">`
+                    ? `<img src="${memory.fileUrl}" alt="Anı fotoğrafı" class="memory-media" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                       <div style="display:none; text-align:center; padding:20px; color:#666;">Fotoğraf yüklenemedi</div>`
                     : `<audio controls class="memory-media"><source src="${memory.fileUrl}" type="audio/mpeg">Tarayıcınız ses dosyasını desteklemiyor.</audio>`
                 }
             </div>
