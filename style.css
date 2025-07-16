@@ -332,8 +332,8 @@ body {
 }
 
 .audio-btn:hover {
-    background: #764ba2;
-    color: white;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    transform: translateY(-2px);
 }
 
 .capture-preview {
@@ -382,6 +382,41 @@ body {
     font-size: 1.2rem;
 }
 
+.upload-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.upload-btn {
+    flex: 1;
+    min-width: 150px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.upload-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* Responsive tasarım */
 @media (max-width: 768px) {
     .main {
@@ -417,6 +452,17 @@ body {
     .capture-btn {
         padding: 12px 15px;
         font-size: 0.9rem;
+    }
+
+    .upload-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .upload-btn {
+        padding: 12px 15px;
+        font-size: 0.9rem;
+        min-width: auto;
     }
 }
 

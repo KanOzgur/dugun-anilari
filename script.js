@@ -5,6 +5,10 @@ const BACKEND_URL = 'https://dugun-anilari-backend.onrender.com';
 const uploadForm = document.getElementById('uploadForm');
 const photoCaptureBtn = document.getElementById('photoCaptureBtn');
 const audioCaptureBtn = document.getElementById('audioCaptureBtn');
+const photoUploadBtn = document.getElementById('photoUploadBtn');
+const audioUploadBtn = document.getElementById('audioUploadBtn');
+const photoFileInput = document.getElementById('photoFileInput');
+const audioFileInput = document.getElementById('audioFileInput');
 const capturePreview = document.getElementById('capturePreview');
 const previewContent = document.getElementById('previewContent');
 const retakeBtn = document.getElementById('retakeBtn');
@@ -154,6 +158,42 @@ audioCaptureBtn.addEventListener('click', async function() {
     }
 });
 
+// Fotoğraf dosyası yükleme
+photoUploadBtn.addEventListener('click', function() {
+    photoFileInput.click();
+});
+
+photoFileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.type.startsWith('image/')) {
+            capturedFile = file;
+            capturedFileType = 'photo';
+            showPreview();
+        } else {
+            alert('Lütfen geçerli bir fotoğraf dosyası seçin!');
+        }
+    }
+});
+
+// Ses dosyası yükleme
+audioUploadBtn.addEventListener('click', function() {
+    audioFileInput.click();
+});
+
+audioFileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.type.startsWith('audio/')) {
+            capturedFile = file;
+            capturedFileType = 'audio';
+            showPreview();
+        } else {
+            alert('Lütfen geçerli bir ses dosyası seçin!');
+        }
+    }
+});
+
 // Önizleme göster
 function showPreview() {
     if (capturedFileType === 'photo') {
@@ -190,6 +230,10 @@ retakeBtn.addEventListener('click', function() {
     capturedFileType = null;
     capturePreview.style.display = 'none';
     submitBtn.style.display = 'none';
+    
+    // Dosya input'larını temizle
+    photoFileInput.value = '';
+    audioFileInput.value = '';
     
     if (mediaStream) {
         mediaStream.getTracks().forEach(track => track.stop());
@@ -234,6 +278,11 @@ uploadForm.addEventListener('submit', async function(e) {
             submitBtn.style.display = 'none';
             capturedFile = null;
             capturedFileType = null;
+            
+            // Dosya input'larını temizle
+            photoFileInput.value = '';
+            audioFileInput.value = '';
+            
             loadMemories(); // Galeriyi yenile
         } else {
             const error = await response.text();
