@@ -196,28 +196,127 @@ audioFileInput.addEventListener('change', function(e) {
 
 // Önizleme göster
 function showPreview() {
+    // Dosya bilgilerini hesapla
+    const fileSize = (capturedFile.size / 1024 / 1024).toFixed(2); // MB
+    const fileName = capturedFile.name;
+    const fileType = capturedFileType === 'photo' ? 'Fotoğraf' : 'Ses Dosyası';
+    
+    // Önizleme container'ı oluştur
+    const previewContainer = document.createElement('div');
+    previewContainer.className = 'preview-container';
+    previewContainer.style.cssText = `
+        border: 2px solid #667eea;
+        border-radius: 15px;
+        padding: 20px;
+        background: rgba(102, 126, 234, 0.05);
+        margin: 15px 0;
+    `;
+    
+    // Dosya bilgileri header'ı
+    const fileInfo = document.createElement('div');
+    fileInfo.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    `;
+    
+    const fileDetails = document.createElement('div');
+    fileDetails.innerHTML = `
+        <div style="font-weight: 600; color: #667eea; margin-bottom: 5px;">${fileType}</div>
+        <div style="font-size: 0.9rem; color: #666;">${fileName}</div>
+        <div style="font-size: 0.8rem; color: #888;">${fileSize} MB</div>
+    `;
+    
+    // Silme butonu
+    const deleteBtn = document.createElement('button');
+    deleteBtn.innerHTML = '🗑️ Sil';
+    deleteBtn.style.cssText = `
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    `;
+    
+    deleteBtn.addEventListener('mouseenter', () => {
+        deleteBtn.style.background = '#ff5252';
+        deleteBtn.style.transform = 'scale(1.05)';
+    });
+    
+    deleteBtn.addEventListener('mouseleave', () => {
+        deleteBtn.style.background = '#ff6b6b';
+        deleteBtn.style.transform = 'scale(1)';
+    });
+    
+    deleteBtn.addEventListener('click', () => {
+        // Dosyayı sil
+        capturedFile = null;
+        capturedFileType = null;
+        capturePreview.style.display = 'none';
+        submitBtn.style.display = 'none';
+        
+        // Dosya input'larını temizle
+        photoFileInput.value = '';
+        audioFileInput.value = '';
+        
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+    });
+    
+    fileInfo.appendChild(fileDetails);
+    fileInfo.appendChild(deleteBtn);
+    previewContainer.appendChild(fileInfo);
+    
+    // Medya önizlemesi
+    const mediaPreview = document.createElement('div');
+    mediaPreview.style.cssText = `
+        text-align: center;
+        margin-top: 15px;
+    `;
+    
     if (capturedFileType === 'photo') {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(capturedFile);
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '300px';
-        img.style.objectFit = 'cover';
-        img.style.borderRadius = '10px';
-        
-        previewContent.innerHTML = '';
-        previewContent.appendChild(img);
+        img.style.cssText = `
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        `;
+        mediaPreview.appendChild(img);
     } else if (capturedFileType === 'audio') {
         const audio = document.createElement('audio');
         audio.controls = true;
         audio.src = URL.createObjectURL(capturedFile);
-        audio.style.width = '100%';
-        audio.style.margin = '10px 0';
-        
-        previewContent.innerHTML = '';
-        previewContent.appendChild(audio);
+        audio.style.cssText = `
+            width: 100%;
+            margin: 10px 0;
+            border-radius: 10px;
+        `;
+        mediaPreview.appendChild(audio);
     }
     
+    previewContainer.appendChild(mediaPreview);
+    
+    // Önizleme alanını temizle ve yeni içeriği ekle
+    previewContent.innerHTML = '';
+    previewContent.appendChild(previewContainer);
+    
+    // Submit butonunu göster
     submitBtn.style.display = 'block';
+    
+    // Capture butonlarını reset et
     photoCaptureBtn.disabled = false;
     photoCaptureBtn.textContent = '📸 Anlık Fotoğraf Çek';
     audioCaptureBtn.disabled = false;

@@ -349,16 +349,32 @@ body {
     max-width: 100%;
 }
 
+.preview-container {
+    border: 2px solid #667eea;
+    border-radius: 15px;
+    padding: 20px;
+    background: rgba(102, 126, 234, 0.05);
+    margin: 15px 0;
+    transition: all 0.3s ease;
+}
+
+.preview-container:hover {
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
 .preview-content img {
     max-width: 100%;
     max-height: 300px;
     border-radius: 10px;
     object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 .preview-content audio {
     width: 100%;
     margin: 10px 0;
+    border-radius: 10px;
 }
 
 .retake-btn {
