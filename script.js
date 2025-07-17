@@ -486,9 +486,29 @@ function formatDate(dateString) {
     });
 }
 
+// Test fonksiyonu - sayfa yüklendiğinde çalışır
+function testPreview() {
+    console.log('Test: DOM elementleri kontrol ediliyor...');
+    console.log('capturePreview:', capturePreview);
+    console.log('previewContent:', previewContent);
+    console.log('submitBtn:', submitBtn);
+    
+    // Test için basit bir önizleme göster
+    if (capturePreview && previewContent) {
+        capturePreview.style.display = 'block';
+        previewContent.innerHTML = '<div style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;"><h3>🧪 Test Önizlemesi</h3><p>Bu bir test önizlemesidir. Eğer bunu görüyorsanız, önizleme sistemi çalışıyor demektir.</p></div>';
+        console.log('Test önizlemesi gösterildi');
+    } else {
+        console.error('DOM elementleri bulunamadı!');
+    }
+}
+
 // Sayfa yüklendiğinde anıları yükle
 document.addEventListener('DOMContentLoaded', function() {
     loadMemories();
+    
+    // Test fonksiyonunu çalıştır
+    setTimeout(testPreview, 1000);
     
     // Her 30 saniyede bir anıları yenile
     setInterval(loadMemories, 30000);
