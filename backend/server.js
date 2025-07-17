@@ -189,8 +189,37 @@ app.get('/memories', async (req, res) => {
         if (error.message.includes('Invalid Credentials') || error.message.includes('unauthorized')) {
             const refreshed = await refreshToken();
             if (refreshed) {
-                // Tekrar dene
-                return app.get('/memories')(req, res);
+                // Token yenilendi, aynı işlemi tekrar dene
+                try {
+                    const response = await drive.files.list({
+                        q: `'${process.env.GOOGLE_DRIVE_FOLDER_ID}' in parents and trashed=false`,
+                        fields: 'files(id,name,createdTime,mimeType)',
+                        orderBy: 'createdTime desc',
+                        pageSize: 20
+                    });
+
+                    const files = response.data.files || [];
+                    const driveMemories = files.map(file => {
+                        const nameParts = file.name.split('_');
+                        const fileType = nameParts[0];
+                        const originalName = nameParts.slice(2).join('_');
+                        
+                        return {
+                            id: file.id,
+                            name: originalName || 'Bilinmeyen',
+                            message: '',
+                            fileType: fileType,
+                            fileUrl: getFileUrl(file.id),
+                            createdAt: file.createdTime
+                        };
+                    });
+
+                    const recentMemories = driveMemories.slice(0, 10);
+                    return res.json(recentMemories);
+                } catch (retryError) {
+                    console.error('Token yenileme sonrası hata:', retryError);
+                    return res.status(500).json({ error: 'Anılar yüklenirken hata oluştu: ' + retryError.message });
+                }
             }
         }
         
