@@ -456,7 +456,16 @@ function displayMemories(memories) {
                                 </div>
                                 ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
                                 <div class="memory-media">
-                                    <iframe src="${memory.fileUrl}" width="100%" height="300" frameborder="0" style="border-radius: 8px;" loading="lazy"></iframe>
+                                    <a href="${memory.fileUrl}" target="_blank" class="media-link">
+                                        <div class="media-thumbnail">
+                                            <img src="https://drive.google.com/thumbnail?id=${memory.id}&sz=w400" 
+                                                 alt="Fotoğraf" 
+                                                 onerror="this.src='data:image/svg+xml;base64PHN2ZyB3aWR0D0NDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly933udzMub3JnLzIwMDAvc3ZnIj48mVjdCB3WR0aD0MTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8PHRleHQgeD0NTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2ucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0Izk5OSIgdGV4C1hbmNob3I9Im1ZGRsZSIgZHk9Ii4zZW0PvCfkqE8RleHQ+PC9zdmc+'">
+                                        </div>
+                                        <div class="media-overlay">
+                                            <span class="view-text">👁️ Görüntüle</span>
+                                        </div>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -481,7 +490,15 @@ function displayMemories(memories) {
                                 </div>
                                 ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
                                 <div class="memory-media">
-                                    <iframe src="${memory.fileUrl}" width="100%" height="100" frameborder="0" style="border-radius: 8px;" loading="lazy"></iframe>
+                                    <a href="${memory.fileUrl}" target="_blank" class="media-link">
+                                        <div class="media-thumbnail audio-thumbnail">
+                                            <div class="audio-icon">🎵</div>
+                                            <div class="audio-text">Ses Dosyası</div>
+                                        </div>
+                                        <div class="media-overlay">
+                                            <span class="view-text">🎧 Dinle</span>
+                                        </div>
+                                    </a>
                                 </div>
                             </div>
                         </div>

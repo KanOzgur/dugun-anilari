@@ -250,9 +250,9 @@ async function uploadToGoogleDrive(file, fileType, originalName) {
 
 // Dosya URL'sini oluştur
 function getFileUrl(fileId) {
-    // Cache-busting için timestamp ekle
+    // Google Drive'ın yeni embed formatı
     const timestamp = Date.now();
-    return `https://drive.google.com/file/d/${fileId}/preview?t=${timestamp}`;
+    return `https://drive.google.com/file/d/${fileId}/preview?usp=sharing&t=${timestamp}`;
 }
 
 // Error handling middleware
