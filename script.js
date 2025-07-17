@@ -196,10 +196,19 @@ audioFileInput.addEventListener('change', function(e) {
 
 // Önizleme göster
 function showPreview() {
+    console.log('showPreview çağrıldı');
+    console.log('capturedFile:', capturedFile);
+    console.log('capturedFileType:', capturedFileType);
+    
+    // capturePreview'ı görünür yap
+    capturePreview.style.display = 'block';
+    
     // Dosya bilgilerini hesapla
     const fileSize = (capturedFile.size / 1024 / 1024).toFixed(2); // MB
     const fileName = capturedFile.name;
     const fileType = capturedFileType === 'photo' ? 'Fotoğraf' : 'Ses Dosyası';
+    
+    console.log('Dosya bilgileri:', { fileSize, fileName, fileType });
     
     // Önizleme container'ı oluştur
     const previewContainer = document.createElement('div');
@@ -257,6 +266,7 @@ function showPreview() {
     });
     
     deleteBtn.addEventListener('click', () => {
+        console.log('Silme butonu tıklandı');
         // Dosyayı sil
         capturedFile = null;
         capturedFileType = null;
@@ -285,6 +295,7 @@ function showPreview() {
     `;
     
     if (capturedFileType === 'photo') {
+        console.log('Fotoğraf önizlemesi oluşturuluyor');
         const img = document.createElement('img');
         img.src = URL.createObjectURL(capturedFile);
         img.style.cssText = `
@@ -296,6 +307,7 @@ function showPreview() {
         `;
         mediaPreview.appendChild(img);
     } else if (capturedFileType === 'audio') {
+        console.log('Ses önizlemesi oluşturuluyor');
         const audio = document.createElement('audio');
         audio.controls = true;
         audio.src = URL.createObjectURL(capturedFile);
@@ -312,6 +324,8 @@ function showPreview() {
     // Önizleme alanını temizle ve yeni içeriği ekle
     previewContent.innerHTML = '';
     previewContent.appendChild(previewContainer);
+    
+    console.log('Önizleme oluşturuldu');
     
     // Submit butonunu göster
     submitBtn.style.display = 'block';
