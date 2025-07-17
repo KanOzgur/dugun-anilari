@@ -6,61 +6,87 @@ const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
+
 // Middleware
 app.use(cors({
     origin: [
-       'https://kanozgur.github.io',
-       'https://kanozgur.github.io/dugun-anilari',
-        'http://localhost:300',
+        'https://kanozgur.github.io',
+        'https://kanozgur.github.io/dugun-anilari',
+        'http://localhost:3000',
         'http://localhost:5000'
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'ONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Google Drive API setup - Service Account kullan
+// Google Drive API setup - OAuth2 kullan
+let oauth2Client;
 let drive = null;
 
 try {
-    // Service Account credentials kontrolü
-    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable bulunamadı');    }
-    
-    let credentials;
-    try {
-        credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
-    } catch (parseError) {
-        throw new Error('GOOGLE_APPLICATION_CREDENTIALS JSON formatında değil: ' + parseError.message);
-    }
+    // OAuth2 credentials
+    oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+    );
 
-    // Gerekli alanları kontrol et
-    if (!credentials.client_email || !credentials.private_key) {
-        throw new Error('Service Account credentials eksik: client_email veya private_key bulunamadı');
+    // Access token varsa kullan
+    if (process.env.GOOGLE_ACCESS_TOKEN) {
+        oauth2Client.setCredentials({
+            access_token: process.env.GOOGLE_ACCESS_TOKEN
+        });
+        drive = google.drive({ version: 'v3', auth: oauth2Client });
+        console.log('OAuth2 ile Google Drive API başarıyla yapılandırıldı');
+    } else {
+        console.log('OAuth2 access token bulunamadı');
     }
-
-    const auth = new google.auth.GoogleAuth({
-        credentials: credentials,
-        scopes: ['https://www.googleapis.com/auth/drive.file']
-    });
-    
-    drive = google.drive({ version: 'v3', auth: auth });
-    console.log('Service Account ile Google Drive API başarıyla yapılandırıldı');
-    console.log('Service Account Email:', credentials.client_email);
 } catch (error) {
-    console.error('Google Drive API yapılandırma hatası:', error.message);
-    console.log('Lütfen Render dashboard\'da GOOGLE_APPLICATION_CREDENTIALS environment variable\'ını kontrol edin');
+    console.error('Google Drive API yapılandırma hatası:', error);
 }
+
+// OAuth2 callback endpoint
+app.get('/oauth2callback', async (req, res) => {
+    try {
+        const { code } = req.query;
+        const { tokens } = await oauth2Client.getToken(code);
+        oauth2Client.setCredentials(tokens);
+        drive = google.drive({ version: 'v3', auth: oauth2Client });
+        
+        console.log('OAuth2 token alındı:', tokens.access_token);
+        
+        // Token'ı environment variable olarak kaydet (geçici çözüm)
+        process.env.GOOGLE_ACCESS_TOKEN = tokens.access_token;
+        
+        res.json({ 
+            message: 'OAuth2 başarıyla yapılandırıldı',
+            access_token: tokens.access_token 
+        });
+    } catch (error) {
+        console.error('OAuth2 callback hatası:', error);
+        res.status(500).json({ error: 'OAuth2 yapılandırma hatası' });
+    }
+});
+
+// OAuth2 authorization URL
+app.get('/auth', (req, res) => {
+    const authUrl = oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/drive.file']
+    });
+    res.json({ authUrl });
+});
 
 // Multer configuration for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10B limit
+        fileSize: 10 * 1024 * 1024, // 10MB limit
     },
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('audio/')) {
@@ -88,19 +114,19 @@ app.get('/memories', async (req, res) => {
             return res.status(500).json({ error: 'Google Drive folder ID ayarlanmamış' });
         }
 
-        // Google Drivedan dosyaları al
+        // Google Drive'dan dosyaları al
         const response = await drive.files.list({
             q: `'${folderId}' in parents and trashed=false`,
             fields: 'files(id,name,createdTime,mimeType)',
             orderBy: 'createdTime desc',
-            pageSize: 20
+            pageSize: 20 // Son 20 dosya
         });
 
         const files = response.data.files || [];
         
         // Dosyaları memory formatına çevir
         const driveMemories = files.map(file => {
-            // Dosya adından bilgileri çıkar (format: photo_1234567890e.jpg)
+            // Dosya adından bilgileri çıkar (format: photo_1234567890_filename.jpg)
             const nameParts = file.name.split('_');
             const fileType = nameParts[0]; // photo veya audio
             const timestamp = nameParts[1];
@@ -116,7 +142,7 @@ app.get('/memories', async (req, res) => {
             };
         });
 
-        // Sadece son 10ayı döndür
+        // Sadece son 10 dosyayı döndür
         const recentMemories = driveMemories.slice(0, 10);
         res.json(recentMemories);
 
@@ -126,7 +152,7 @@ app.get('/memories', async (req, res) => {
     }
 });
 
-// Dosya yükle ve Google Driveakaydet
+// Dosya yükle ve Google Drive'a kaydet
 app.post('/upload', upload.single('file'), async (req, res) => {
     try {
         const { name, message, fileType } = req.body;
@@ -141,7 +167,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         }
 
         if (!drive) {
-            return res.status(500).json({ error: 'Google Drive API yapılandırılmamış' });
+            return res.status(500).json({ error: 'Google Drive API yapılandırılmamış. OAuth2 gerekli.' });
         }
 
         // Google Drive'a dosya yükle
@@ -200,7 +226,7 @@ async function uploadToGoogleDrive(file, fileType, originalName) {
         const fileId = response.data.id;
         console.log('Dosya Google Drive\'a yüklendi:', fileId);
 
-        // Dosyayı public yap
+        // Dosyayı public yap - daha güvenilir yöntem
         try {
             await drive.permissions.create({
                 fileId: fileId,
@@ -224,9 +250,9 @@ async function uploadToGoogleDrive(file, fileType, originalName) {
 
 // Dosya URL'sini oluştur
 function getFileUrl(fileId) {
-    // Google Drive'ın yeni embed formatı
+    // Cache-busting için timestamp ekle
     const timestamp = Date.now();
-    return `https://drive.google.com/file/d/${fileId}/preview?usp=sharing&t=${timestamp}`;
+    return `https://drive.google.com/file/d/${fileId}/preview?t=${timestamp}`;
 }
 
 // Error handling middleware
@@ -243,6 +269,6 @@ app.use((req, res) => {
 app.listen(PORT, () => {
     console.log(`Server ${PORT} portunda çalışıyor`);
     console.log(`API: http://localhost:${PORT}`);
-    console.log(`Google Drive API: ${drive ? 'Service Account Aktif' : 'Devre dışı'}`);
+    console.log(`Google Drive API: ${drive ? 'OAuth2 Aktif' : 'Devre dışı'}`);
     console.log(`Folder ID: ${process.env.GOOGLE_DRIVE_FOLDER_ID || 'Ayarlanmamış'}`);
 }); 
