@@ -196,19 +196,13 @@ audioFileInput.addEventListener('change', function(e) {
 
 // Önizleme göster
 function showPreview() {
-    console.log('showPreview çağrıldı');
-    console.log('capturedFile:', capturedFile);
-    console.log('capturedFileType:', capturedFileType);
-    
-    // capturePreview'ı görünür yap
+    // capturePreviewı görünür yap
     capturePreview.style.display = 'block';
     
     // Dosya bilgilerini hesapla
     const fileSize = (capturedFile.size / 1024 / 1024).toFixed(2); // MB
     const fileName = capturedFile.name;
     const fileType = capturedFileType === 'photo' ? 'Fotoğraf' : 'Ses Dosyası';
-    
-    console.log('Dosya bilgileri:', { fileSize, fileName, fileType });
     
     // Önizleme container'ı oluştur
     const previewContainer = document.createElement('div');
@@ -266,7 +260,6 @@ function showPreview() {
     });
     
     deleteBtn.addEventListener('click', () => {
-        console.log('Silme butonu tıklandı');
         // Dosyayı sil
         capturedFile = null;
         capturedFileType = null;
@@ -295,7 +288,6 @@ function showPreview() {
     `;
     
     if (capturedFileType === 'photo') {
-        console.log('Fotoğraf önizlemesi oluşturuluyor');
         const img = document.createElement('img');
         img.src = URL.createObjectURL(capturedFile);
         img.style.cssText = `
@@ -307,7 +299,6 @@ function showPreview() {
         `;
         mediaPreview.appendChild(img);
     } else if (capturedFileType === 'audio') {
-        console.log('Ses önizlemesi oluşturuluyor');
         const audio = document.createElement('audio');
         audio.controls = true;
         audio.src = URL.createObjectURL(capturedFile);
@@ -324,8 +315,6 @@ function showPreview() {
     // Önizleme alanını temizle ve yeni içeriği ekle
     previewContent.innerHTML = '';
     previewContent.appendChild(previewContainer);
-    
-    console.log('Önizleme oluşturuldu');
     
     // Submit butonunu göster
     submitBtn.style.display = 'block';
@@ -466,7 +455,18 @@ function displayMemories(memories) {
                                     <span class="memory-date">${formatDate(memory.createdAt)}</span>
                                 </div>
                                 ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
-                                <iframe src="${memory.fileUrl}" width="100%" height="300" frameborder="0" style="border-radius: 8px;" loading="lazy"></iframe>
+                                <div class="media-preview">
+                                    <img src="https://drive.google.com/thumbnail?id=${memory.id}&sz=w400" 
+                                         alt="${escapeHtml(memory.name)}" 
+                                         style="width:100ght: 200 object-fit: cover; border-radius: 8px; cursor: pointer;"
+                                         onclick="window.open('${memory.fileUrl}', '_blank')"
+                                         onerror="this.src='data:image/svg+xml;base64PHN2ZyB3aWR0D0NDAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly933udzMub3JnLzIwMDAvc3ZnIj48mVjdCB3WR0aD0MTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8PHRleHQgeD0NTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2ucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0Izk5OSIgdGV4C1hbmNob3I9Im1ZGRsZSIgZHk9Ii4zZW0iPkZvdG8gVW5hdmFpbGFibGU8RleHQ+PC9zdmc+'">
+                                    <div class="media-overlay">
+                                        <button class="view-btn" onclick="window.open('${memory.fileUrl}', '_blank')">
+                                            👁️ Görüntüle
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `).join('')}
@@ -489,8 +489,14 @@ function displayMemories(memories) {
                                     <span class="memory-date">${formatDate(memory.createdAt)}</span>
                                 </div>
                                 ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
-                                <div class="audio-player">
-                                    <iframe src="${memory.fileUrl}" width="100%" height="100" frameborder="0" style="border-radius: 8px;" loading="lazy"></iframe>
+                                <div class="audio-preview">
+                                    <div class="audio-icon">🎵</div>
+                                    <div class="audio-info">
+                                        <div class="audio-name">${escapeHtml(memory.name)}</div>
+                                        <button class="play-btn" onclick="window.open('${memory.fileUrl}', '_blank')">
+                                            ▶️ Dinle
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -527,31 +533,11 @@ function formatDate(dateString) {
     });
 }
 
-// Test fonksiyonu - sayfa yüklendiğinde çalışır
-function testPreview() {
-    console.log('Test: DOM elementleri kontrol ediliyor...');
-    console.log('capturePreview:', capturePreview);
-    console.log('previewContent:', previewContent);
-    console.log('submitBtn:', submitBtn);
-    
-    // Test için basit bir önizleme göster
-    if (capturePreview && previewContent) {
-        capturePreview.style.display = 'block';
-        previewContent.innerHTML = '<div style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;"><h3>🧪 Test Önizlemesi</h3><p>Bu bir test önizlemesidir. Eğer bunu görüyorsanız, önizleme sistemi çalışıyor demektir.</p></div>';
-        console.log('Test önizlemesi gösterildi');
-    } else {
-        console.error('DOM elementleri bulunamadı!');
-    }
-}
-
 // Sayfa yüklendiğinde anıları yükle
 document.addEventListener('DOMContentLoaded', function() {
     loadMemories();
     
-    // Test fonksiyonunu çalıştır
-    setTimeout(testPreview, 1000);
-    
-    // Her 30 saniyede bir anıları yenile
+    // Her 30niyede bir anıları yenile
     setInterval(loadMemories, 30000);
 });
 

@@ -74,11 +74,16 @@ app.get('/oauth2callback', async (req, res) => {
 
 // OAuth2 authorization URL
 app.get('/auth', (req, res) => {
-    const authUrl = oauth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/drive.file']
-    });
-    res.json({ authUrl });
+    try {
+        const authUrl = oauth2Client.generateAuthUrl({
+            access_type: 'offline',
+            scope: ['https://www.googleapis.com/auth/drive.file']
+        });
+        res.json({ authUrl });
+    } catch (error) {
+        console.error('Auth URL oluşturma hatası:', error);
+        res.status(500).json({ error: 'Auth URL oluşturulamadı: ' + error.message });
+    }
 });
 
 // Multer configuration for file uploads
@@ -250,9 +255,8 @@ async function uploadToGoogleDrive(file, fileType, originalName) {
 
 // Dosya URL'sini oluştur
 function getFileUrl(fileId) {
-    // Cache-busting için timestamp ekle
-    const timestamp = Date.now();
-    return `https://drive.google.com/file/d/${fileId}/preview?t=${timestamp}`;
+    // Direkt Google Drive linki (iframe yerine)
+    return `https://drive.google.com/file/d/${fileId}/view`;
 }
 
 // Error handling middleware
