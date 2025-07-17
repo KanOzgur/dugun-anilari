@@ -170,6 +170,25 @@ body {
 }
 
 .gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    background: rgba(255, 255, 0.1);
+    border-radius: 20px;
+    padding: 25px;
+    backdrop-filter: blur(10px);
+}
+
+.section-title {
+    font-family: 'Dancing Script', cursive;
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 20px;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.memories-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
@@ -185,6 +204,14 @@ body {
 
 .memory-card:hover {
     transform: translateY(-5px);
+}
+
+.photo-card {
+    border-left: 4px solid #667eea;
+}
+
+.audio-card {
+    border-left: 4px solid #764ba2;
 }
 
 .memory-content {
@@ -216,9 +243,13 @@ body {
 }
 
 .memory-media {
-    width: 100%;
     border-radius: 8px;
-    margin-top: 10px;
+    overflow: hidden;
+}
+
+.memory-media iframe {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .loading {

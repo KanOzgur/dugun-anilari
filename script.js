@@ -196,19 +196,13 @@ audioFileInput.addEventListener('change', function(e) {
 
 // Önizleme göster
 function showPreview() {
-    console.log('showPreview çağrıldı');
-    console.log('capturedFile:', capturedFile);
-    console.log('capturedFileType:', capturedFileType);
-    
-    // capturePreview'ı görünür yap
+    // capturePreviewı görünür yap
     capturePreview.style.display = 'block';
     
     // Dosya bilgilerini hesapla
     const fileSize = (capturedFile.size / 1024 / 1024).toFixed(2); // MB
     const fileName = capturedFile.name;
     const fileType = capturedFileType === 'photo' ? 'Fotoğraf' : 'Ses Dosyası';
-    
-    console.log('Dosya bilgileri:', { fileSize, fileName, fileType });
     
     // Önizleme container'ı oluştur
     const previewContainer = document.createElement('div');
@@ -266,7 +260,6 @@ function showPreview() {
     });
     
     deleteBtn.addEventListener('click', () => {
-        console.log('Silme butonu tıklandı');
         // Dosyayı sil
         capturedFile = null;
         capturedFileType = null;
@@ -295,7 +288,6 @@ function showPreview() {
     `;
     
     if (capturedFileType === 'photo') {
-        console.log('Fotoğraf önizlemesi oluşturuluyor');
         const img = document.createElement('img');
         img.src = URL.createObjectURL(capturedFile);
         img.style.cssText = `
@@ -307,7 +299,6 @@ function showPreview() {
         `;
         mediaPreview.appendChild(img);
     } else if (capturedFileType === 'audio') {
-        console.log('Ses önizlemesi oluşturuluyor');
         const audio = document.createElement('audio');
         audio.controls = true;
         audio.src = URL.createObjectURL(capturedFile);
@@ -324,8 +315,6 @@ function showPreview() {
     // Önizleme alanını temizle ve yeni içeriği ekle
     previewContent.innerHTML = '';
     previewContent.appendChild(previewContainer);
-    
-    console.log('Önizleme oluşturuldu');
     
     // Submit butonunu göster
     submitBtn.style.display = 'block';
@@ -445,26 +434,69 @@ function displayMemories(memories) {
         return;
     }
 
-    // Sadece fotoğraf türündeki anıları filtrele
+    // Fotoğraf ve ses dosyalarını ayrı ayrı filtrele
     const photoMemories = memories.filter(memory => memory.fileType === 'photo');
+    const audioMemories = memories.filter(memory => memory.fileType === 'audio');
 
-    if (photoMemories.length === 0) {
-        gallery.innerHTML = '<div class="loading">Henüz fotoğraf paylaşılmamış. İlk fotoğrafı siz paylaşın!</div>';
-        return;
+    // Galeri içeriğini oluştur
+    let galleryContent = '';
+
+    // Fotoğraflar bölümü
+    if (photoMemories.length > 0) {
+        galleryContent += `
+            <div class="memories-section">
+                <h3 class="section-title">📸 Fotoğraflar</h3>
+                <div class="memories-grid">
+                    ${photoMemories.map(memory => `
+                        <div class="memory-card photo-card">
+                            <div class="memory-content">
+                                <div class="memory-header">
+                                    <span class="memory-name">${escapeHtml(memory.name)}</span>
+                                    <span class="memory-date">${formatDate(memory.createdAt)}</span>
+                                </div>
+                                ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
+                                <div class="memory-media">
+                                    <iframe src="${memory.fileUrl}" width="100%" height="300" frameborder="0" style="border-radius: 8px;" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
     }
 
-    gallery.innerHTML = photoMemories.map(memory => `
-        <div class="memory-card">
-            <div class="memory-content">
-                <div class="memory-header">
-                    <span class="memory-name">${escapeHtml(memory.name)}</span>
-                    <span class="memory-date">${formatDate(memory.createdAt)}</span>
+    // Ses dosyaları bölümü
+    if (audioMemories.length > 0) {
+        galleryContent += `
+            <div class="memories-section">
+                <h3 class="section-title">🎵 Ses Kayıtları</h3>
+                <div class="memories-grid">
+                    ${audioMemories.map(memory => `
+                        <div class="memory-card audio-card">
+                            <div class="memory-content">
+                                <div class="memory-header">
+                                    <span class="memory-name">${escapeHtml(memory.name)}</span>
+                                    <span class="memory-date">${formatDate(memory.createdAt)}</span>
+                                </div>
+                                ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
+                                <div class="memory-media">
+                                    <iframe src="${memory.fileUrl}" width="100%" height="100" frameborder="0" style="border-radius: 8px;" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
-                ${memory.message ? `<div class="memory-message">${escapeHtml(memory.message)}</div>` : ''}
-                <iframe src="${memory.fileUrl}" width="100%" height="300" frameborder="0" style="border-radius: 8px;" loading="lazy"></iframe>
             </div>
-        </div>
-    `).join('');
+        `;
+    }
+
+    // Eğer hiç anı yoksa
+    if (photoMemories.length === 0 && audioMemories.length === 0) {
+        galleryContent = '<div class="loading">Henüz anı paylaşılmamış. İlk anıyı siz paylaşın!</div>';
+    }
+
+    gallery.innerHTML = galleryContent;
 }
 
 // HTML escape fonksiyonu
@@ -486,31 +518,11 @@ function formatDate(dateString) {
     });
 }
 
-// Test fonksiyonu - sayfa yüklendiğinde çalışır
-function testPreview() {
-    console.log('Test: DOM elementleri kontrol ediliyor...');
-    console.log('capturePreview:', capturePreview);
-    console.log('previewContent:', previewContent);
-    console.log('submitBtn:', submitBtn);
-    
-    // Test için basit bir önizleme göster
-    if (capturePreview && previewContent) {
-        capturePreview.style.display = 'block';
-        previewContent.innerHTML = '<div style="padding: 20px; background: #f0f0f0; border-radius: 10px; text-align: center;"><h3>🧪 Test Önizlemesi</h3><p>Bu bir test önizlemesidir. Eğer bunu görüyorsanız, önizleme sistemi çalışıyor demektir.</p></div>';
-        console.log('Test önizlemesi gösterildi');
-    } else {
-        console.error('DOM elementleri bulunamadı!');
-    }
-}
-
 // Sayfa yüklendiğinde anıları yükle
 document.addEventListener('DOMContentLoaded', function() {
     loadMemories();
     
-    // Test fonksiyonunu çalıştır
-    setTimeout(testPreview, 1000);
-    
-    // Her 30 saniyede bir anıları yenile
+    // Her 30niyede bir anıları yenile
     setInterval(loadMemories, 30000);
 });
 
