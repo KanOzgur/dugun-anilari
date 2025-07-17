@@ -27,6 +27,28 @@ app.use(express.urlencoded({ extended: true }));
 let oauth2Client;
 let drive = null;
 
+// Token yenileme fonksiyonu
+async function refreshToken() {
+    try {
+        if (process.env.GOOGLE_REFRESH_TOKEN) {
+            oauth2Client.setCredentials({
+                refresh_token: process.env.GOOGLE_REFRESH_TOKEN
+            });
+            
+            const { credentials } = await oauth2Client.refreshAccessToken();
+            oauth2Client.setCredentials(credentials);
+            drive = google.drive({ version: 'v3', auth: oauth2Client });
+            
+            console.log('Token başarıyla yenilendi');
+            return true;
+        }
+    } catch (error) {
+        console.error('Token yenileme hatası:', error);
+        return false;
+    }
+    return false;
+}
+
 try {
     // OAuth2 credentials
     oauth2Client = new google.auth.OAuth2(
@@ -59,12 +81,16 @@ app.get('/oauth2callback', async (req, res) => {
         
         console.log('OAuth2 token alındı:', tokens.access_token);
         
-        // Token'ı environment variable olarak kaydet (geçici çözüm)
+        // Token'ları environment variable olarak kaydet
         process.env.GOOGLE_ACCESS_TOKEN = tokens.access_token;
+        if (tokens.refresh_token) {
+            process.env.GOOGLE_REFRESH_TOKEN = tokens.refresh_token;
+        }
         
         res.json({ 
             message: 'OAuth2 başarıyla yapılandırıldı',
-            access_token: tokens.access_token 
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token
         });
     } catch (error) {
         console.error('OAuth2 callback hatası:', error);
@@ -77,7 +103,8 @@ app.get('/auth', (req, res) => {
     try {
         const authUrl = oauth2Client.generateAuthUrl({
             access_type: 'offline',
-            scope: ['https://www.googleapis.com/auth/drive.file']
+            scope: ['https://www.googleapis.com/auth/drive.file'],
+            prompt: 'consent' // Refresh token almak için
         });
         res.json({ authUrl });
     } catch (error) {
@@ -111,7 +138,11 @@ app.get('/', (req, res) => {
 app.get('/memories', async (req, res) => {
     try {
         if (!drive) {
-            return res.status(500).json({ error: 'Google Drive API yapılandırılmamış' });
+            // Token yenilemeyi dene
+            const refreshed = await refreshToken();
+            if (!refreshed) {
+                return res.status(500).json({ error: 'Google Drive API yapılandırılmamış' });
+            }
         }
 
         const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
@@ -153,6 +184,16 @@ app.get('/memories', async (req, res) => {
 
     } catch (error) {
         console.error('Anılar getirilirken hata:', error);
+        
+        // Token hatası ise yenilemeyi dene
+        if (error.message.includes('Invalid Credentials') || error.message.includes('unauthorized')) {
+            const refreshed = await refreshToken();
+            if (refreshed) {
+                // Tekrar dene
+                return app.get('/memories')(req, res);
+            }
+        }
+        
         res.status(500).json({ error: 'Anılar yüklenirken hata oluştu: ' + error.message });
     }
 });
@@ -172,7 +213,11 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         }
 
         if (!drive) {
-            return res.status(500).json({ error: 'Google Drive API yapılandırılmamış. OAuth2 gerekli.' });
+            // Token yenilemeyi dene
+            const refreshed = await refreshToken();
+            if (!refreshed) {
+                return res.status(500).json({ error: 'Google Drive API yapılandırılmamış. Service Account gerekli.' });
+            }
         }
 
         // Google Drive'a dosya yükle
